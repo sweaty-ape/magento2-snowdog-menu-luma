@@ -118,54 +118,52 @@ class Menu
 
     protected function addChildNodes($parentNode, $parent, $tree, $level = 1, $categoryChildren = false)
     {
-        if ($level < $this->getLevelCount()) {
-            // Check next levels for child nodes
-            $nodes = $this->getNodes($level, (int)$parent->getNodeId());
+        // Check next levels for child nodes
+        $nodes = $this->getNodes($level, (int)$parent->getNodeId());
 
-            if ($nodes) {
-                foreach($nodes as $child) {
+        if ($nodes) {
+            foreach($nodes as $child) {
+
+                $childNode = new Node(
+                    $this->getNodeAsArray($child),
+                    'id',
+                    $tree,
+                    $parentNode
+                );
+
+                $parentNode->addChild($childNode);
+                $this->addChildNodes($childNode, $child, $tree, $level + 1);
+            }
+            $level++;
+        }
+
+        // If category_child node, then loop all subcategories, otherwise loop child menu nodes
+        if ($parent->getType() == 'category_child') {
+            $children = $this->getCategoryChildren($parent->getContent());
+
+            if (count($children)) {
+                $_level = $level;
+                foreach ($children as $child) {
+
+                    $childObj = new DataObject([
+                        'type' => 'category_child',
+                        'title' => $child->getName(),
+                        'content' => $child->getId(),
+                        'node_id' => $_level . '-' . $child->getId(),
+                        'classes' => ''
+                    ]);
 
                     $childNode = new Node(
-                        $this->getNodeAsArray($child),
+                        $this->getNodeAsArray($childObj),
                         'id',
                         $tree,
                         $parentNode
                     );
 
                     $parentNode->addChild($childNode);
-                    $this->addChildNodes($childNode, $child, $tree, $level + 1);
+                    $this->addChildNodes($childNode, $childObj, $tree, $_level + 1, true);
                 }
-                $level++;
-            }
-
-            // If category_child node, then loop all subcategories, otherwise loop child menu nodes
-            if ($parent->getType() == 'category_child') {
-                $children = $this->getCategoryChildren($parent->getContent());
-
-                if (count($children)) {
-                    $_level = $level;
-                    foreach ($children as $child) {
-
-                        $childObj = new DataObject([
-                            'type' => 'category_child',
-                            'title' => $child->getName(),
-                            'content' => $child->getId(),
-                            'node_id' => $_level . '-' . $child->getId(),
-                            'classes' => ''
-                        ]);
-    
-                        $childNode = new Node(
-                            $this->getNodeAsArray($childObj),
-                            'id',
-                            $tree,
-                            $parentNode
-                        );
-    
-                        $parentNode->addChild($childNode);
-                        $this->addChildNodes($childNode, $childObj, $tree, $_level + 1, true);
-                    }
-                    $_level++;
-                }
+                $_level++;
             }
         }
     }
